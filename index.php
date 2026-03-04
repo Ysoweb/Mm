@@ -75,6 +75,23 @@
         .search-area input { background: transparent; width: 100%; max-width: 400px; font-family: 'Tajawal'; font-size: 1.8rem; color: var(--text-main); text-align: center; padding: 10px; border-bottom: 2px solid transparent; transition: 0.3s; }
         .search-area input:focus { border-bottom-color: var(--accent-light); }
         .search-area input::placeholder { color: var(--text-muted); opacity: 0.5; }
+        .updates-link { color: var(--accent); font-size: 1rem; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border-bottom: 1px dashed var(--accent-light); padding-bottom: 5px; transition: 0.3s; }
+        .updates-link:hover { transform: translateY(-2px); }
+
+        .features-page { display: none; }
+        .features-page.active { display: block; }
+        .features-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; }
+        .features-title { font-family:'Amiri', serif; color:var(--accent); font-size:2.4rem; }
+        .features-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .feature-card { background: var(--glass-bg); border: 1px solid var(--accent-light); border-radius: 20px; padding: 18px; min-height: 150px; }
+        .feature-card h3 { font-size:1.2rem; margin-bottom:8px; color:var(--accent); }
+        .feature-card p { color: var(--text-muted); line-height: 1.7; }
+        .feature-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px; }
+        .feature-btn { background:transparent; border:1px solid var(--accent-light); color:var(--text-main); border-radius:999px; padding:8px 14px; cursor:pointer; font-family:'Tajawal'; }
+        .feature-btn.primary { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+        .features-log { background: rgba(184, 153, 71, 0.07); border-radius: 18px; padding: 15px; margin: 15px 0; line-height: 1.9; }
+        .mini-input { width: 100%; background: transparent; border-bottom: 2px solid var(--accent-light); color: var(--text-main); padding: 10px 0; font-family: 'Tajawal'; font-size: 1rem; }
+        .feature-result { margin-top: 10px; font-size: 1rem; color: var(--text-main); line-height: 1.8; white-space: pre-wrap; }
         
         .bookmark-flat { display: none; justify-content: space-between; align-items: center; padding: 20px 0; cursor: pointer; transition: 0.3s; position: relative; color: var(--accent); }
         .bookmark-flat::after { content: ''; position: absolute; bottom: 0; left: 5%; right: 5%; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
@@ -227,6 +244,7 @@
         <div id="surah-list-container">
             <div class="search-area">
                 <input type="text" id="surah-search" placeholder="ابحث في سور القرآن الكريم..." oninput="filterSurahs('quran')">
+                <div class="updates-link" onclick="openFeaturesPage()"><i class="fas fa-bolt"></i> تابع التحديثات والمميزات الجديدة</div>
             </div>
             <div id="bookmark-flat" class="bookmark-flat" onclick="goToBookmark()">
                 <div style="display:flex; flex-direction:column; gap:5px;">
@@ -301,7 +319,52 @@
         </div>
         <div class="station-list-flat" id="radio-stations-container"></div>
     </div>
-</main>
+
+
+    <div id="features-page" class="features-page">
+        <div class="features-head">
+            <button class="feature-btn" onclick="closeFeaturesPage()"><i class="fas fa-arrow-right"></i> عودة</button>
+            <h2 class="features-title">صفحة المميزات والتحديثات</h2>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>1) إشعارات الأذكار والآيات</h3>
+                <p>استقبل آية أو ذكر عشوائي مع تنبيه حسب الفترة التي تحددها أنت.</p>
+                <div class="feature-actions">
+                    <button class="feature-btn primary" onclick="requestAzkarPermission()">تفعيل الإشعارات</button>
+                    <button class="feature-btn" onclick="sendInstantRandomReminder()">إرسال الآن</button>
+                </div>
+                <div style="margin-top:10px; color:var(--text-muted);">الفاصل الزمني بالدقائق:</div>
+                <input id="notify-interval" class="mini-input" type="number" min="1" value="1" onchange="updateFeaturesSettings()">
+            </div>
+
+            <div class="feature-card">
+                <h3>2) سجل القراءة والأذكار</h3>
+                <p>يتتبع آخر سورة قرأتها، وعدد السور المفتوحة، وعدد مرات كل ذكر.</p>
+                <div class="features-log" id="features-log-box">جاري تحميل السجل...</div>
+            </div>
+
+            <div class="feature-card">
+                <h3>3) AI مدمج مع السجل</h3>
+                <p>منفصل عن صفحة المساعد. اسأل: كم مرة قلت ذكر معين؟ أو ماذا قرأت آخر مرة؟</p>
+                <input id="features-ai-input" class="mini-input" type="text" placeholder="اكتب سؤالك عن السجل أو اطلب نصيحة تشجيعية...">
+                <div class="feature-actions">
+                    <button class="feature-btn primary" onclick="askFeaturesAI()">إجابة ذكية</button>
+                    <button class="feature-btn" onclick="generateGeneralInfo()">توليد معلومات عامة</button>
+                </div>
+                <div class="feature-result" id="features-ai-result"></div>
+            </div>
+
+            <div class="feature-card">
+                <h3>4) تشجيع يومي على القراءة</h3>
+                <p id="encourage-message">كل آية تقرؤها تفتح لك باب طمأنينة جديد.</p>
+                <div class="feature-actions">
+                    <button class="feature-btn" onclick="refreshEncouragement()">رسالة تشجيع جديدة</button>
+                </div>
+            </div>
+        </div>
+    </div></main>
 
 <div id="overlay" onclick="hideAyahSheet()"></div>
 <div id="ayah-sheet">
@@ -460,6 +523,20 @@
     const arabicNumbers =['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
     let userBookmark = null;
     let currentFontSize = 1.8;
+    let reminderIntervalId = null;
+    let notifyPermissionAsked = false;
+    let featureAiHistory = [{ role: 'system', content: 'أنت مساعد مميزات داخل تطبيق إسلامي، مختصر ومشجع، وتعتمد على سجل المستخدم.' }];
+    const worshipLogKey = 'toba_worship_log';
+    const featuresSettingsKey = 'toba_features_settings';
+    let worshipLog = { lastReadSurah: '', lastReadAt: '', surahOpens: 0, totalDhikr: 0, dhikrCounts: {}, notificationsSent: 0 };
+    let featuresSettings = { reminderMinutes: 1 };
+    const encouragementPhrases = [
+        'استمر، حتى الورد القليل يصنع أثرًا كبيرًا مع الوقت.',
+        'قراءتك اليوم نور لقلبك، ولو كانت آيات قليلة.',
+        'كل ذكر تقوله هو حياة جديدة للروح.',
+        'اجعل لك وردًا ثابتًا، والثبات أحب من الانقطاع.',
+        'ابدأ الآن بدقيقة ذكر، وستجد أثرها في يومك كاملًا.'
+    ];
 
     let topReciters = [
         {id: 'ar.alafasy', name: 'مشاري العفاسي', icon: 'fas fa-user'},
@@ -512,6 +589,7 @@
     window.onload = () => {
         setTimeout(() => { document.getElementById('loader').style.opacity = '0'; setTimeout(() => document.getElementById('loader').style.display = 'none', 800); }, 1000);
         loadBookmark(); loadSurahs(); loadAdhkar(); renderRadioStations(); populateMushafReciters(); renderRecitersGrid(); loadDynamicReciters();
+        loadFeaturesState();
         document.getElementById('radio-audio').src = radioStations[0].url;
     };
 
@@ -549,8 +627,22 @@
         renderRecitersGrid(document.getElementById('reciter-search').value.trim());
     }
 
+    function openFeaturesPage() {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-links button').forEach(el => el.classList.remove('active'));
+        document.getElementById('features-page').classList.add('active');
+        renderWorshipLog();
+        window.scrollTo(0, 0);
+    }
+
+    function closeFeaturesPage() {
+        document.getElementById('features-page').classList.remove('active');
+        switchTab('quran');
+    }
+
     function switchTab(tab) {
         if(tab === 'ai') { openAI(); return; }
+        document.getElementById('features-page').classList.remove('active');
         document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-links button').forEach(el => el.classList.remove('active'));
         document.getElementById(tab).classList.add('active');
@@ -660,6 +752,11 @@
         const bismillahEl = document.getElementById('mushaf-bismillah');
         bismillahEl.style.display = (id === 1 || id === 9) ? 'none' : 'block';
         viewState.currentId = id; viewState.name = name;
+        worshipLog.lastReadSurah = name;
+        worshipLog.lastReadAt = new Date().toISOString();
+        worshipLog.surahOpens += 1;
+        saveWorshipLog();
+        renderWorshipLog();
         const content = document.getElementById('mushaf-content');
         content.innerHTML = '<div style="color:var(--accent); font-size:2rem; padding:40px; text-align:center;">جاري التنزيل...</div>';
         try {
@@ -962,7 +1059,137 @@
 
     function closeAdhkar() { document.getElementById('adhkar-view').style.display = 'none'; document.getElementById('adhkar-cats').style.display = 'flex'; }
 
-    function incDhikr(el, max) { if(navigator.vibrate) navigator.vibrate(50); let curr = parseInt(el.getAttribute('data-c') || '0') + 1; if(curr > max) return; el.setAttribute('data-c', curr); if(curr === max) { el.style.color = 'var(--text-muted)'; el.innerText = '✓'; } else { el.innerText = toArabicNum(max - curr); } }
+    function incDhikr(el, max) {
+        if(navigator.vibrate) navigator.vibrate(50);
+        let curr = parseInt(el.getAttribute('data-c') || '0') + 1;
+        if(curr > max) return;
+        el.setAttribute('data-c', curr);
+        if(curr === max) { el.style.color = 'var(--text-muted)'; el.innerText = '✓'; } else { el.innerText = toArabicNum(max - curr); }
+        const dhikrText = el.parentElement?.querySelector('.dhikr-content')?.innerText?.trim();
+        if(dhikrText) {
+            worshipLog.totalDhikr += 1;
+            worshipLog.dhikrCounts[dhikrText] = (worshipLog.dhikrCounts[dhikrText] || 0) + 1;
+            saveWorshipLog();
+            renderWorshipLog();
+        }
+    }
+
+    function loadFeaturesState() {
+        const cachedLog = localStorage.getItem(worshipLogKey);
+        const cachedSettings = localStorage.getItem(featuresSettingsKey);
+        if(cachedLog) {
+            try { worshipLog = { ...worshipLog, ...JSON.parse(cachedLog) }; } catch(e) {}
+        }
+        if(cachedSettings) {
+            try { featuresSettings = { ...featuresSettings, ...JSON.parse(cachedSettings) }; } catch(e) {}
+        }
+        const intervalInput = document.getElementById('notify-interval');
+        if(intervalInput) intervalInput.value = featuresSettings.reminderMinutes || 1;
+        setupReminderScheduler();
+        renderWorshipLog();
+        refreshEncouragement();
+    }
+
+    function saveWorshipLog() { localStorage.setItem(worshipLogKey, JSON.stringify(worshipLog)); }
+    function saveFeaturesSettings() { localStorage.setItem(featuresSettingsKey, JSON.stringify(featuresSettings)); }
+
+    function renderWorshipLog() {
+        const box = document.getElementById('features-log-box');
+        if(!box) return;
+        const topDhikr = Object.entries(worshipLog.dhikrCounts || {}).sort((a, b) => b[1] - a[1]).slice(0, 3);
+        const topDhikrHtml = topDhikr.length ? topDhikr.map(([text, count]) => `• ${text.slice(0, 35)}... : ${toArabicNum(count)} مرة`).join('<br>') : 'لا يوجد سجل أذكار حتى الآن.';
+        const lastRead = worshipLog.lastReadSurah ? `آخر قراءة: سورة ${worshipLog.lastReadSurah}` : 'آخر قراءة: لا يوجد بعد';
+        box.innerHTML = `${lastRead}<br>عدد مرات فتح السور: ${toArabicNum(worshipLog.surahOpens || 0)}<br>إجمالي تسبيحاتك: ${toArabicNum(worshipLog.totalDhikr || 0)}<br>أكثر أذكار تكرارًا:<br>${topDhikrHtml}<br>عدد التنبيهات المرسلة: ${toArabicNum(worshipLog.notificationsSent || 0)}`;
+    }
+
+    function refreshEncouragement() {
+        const target = document.getElementById('encourage-message');
+        if(!target) return;
+        target.innerText = encouragementPhrases[Math.floor(Math.random() * encouragementPhrases.length)];
+    }
+
+    function updateFeaturesSettings() {
+        const minutes = Math.max(1, parseInt(document.getElementById('notify-interval')?.value || '1'));
+        featuresSettings.reminderMinutes = minutes;
+        saveFeaturesSettings();
+        setupReminderScheduler();
+    }
+
+    function setupReminderScheduler() {
+        if(reminderIntervalId) clearInterval(reminderIntervalId);
+        const ms = (featuresSettings.reminderMinutes || 1) * 60000;
+        reminderIntervalId = setInterval(() => sendInstantRandomReminder(), ms);
+    }
+
+    async function requestAzkarPermission() {
+        if(!('Notification' in window)) return;
+        if(Notification.permission === 'granted') return;
+        if(notifyPermissionAsked && Notification.permission !== 'default') return;
+        notifyPermissionAsked = true;
+        await Notification.requestPermission();
+    }
+
+    function getRandomReminderText() {
+        const fallback = ['سُبْحَانَ اللهِ وَبِحَمْدِهِ، سُبْحَانَ اللهِ العَظِيمِ.', 'اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ.', '﴿فَاذْكُرُونِي أَذْكُرْكُمْ﴾'];
+        const adhkarPool = Object.values(adhkarData || {}).flatMap(items => Array.isArray(items) ? items.map(x => x.content).filter(Boolean) : []);
+        const pool = [...fallback, ...adhkarPool.slice(0, 80)];
+        return pool[Math.floor(Math.random() * pool.length)] || fallback[0];
+    }
+
+    function sendInstantRandomReminder() {
+        const content = getRandomReminderText();
+        const body = content.length > 140 ? content.slice(0, 140) + '...' : content;
+        if('Notification' in window && Notification.permission === 'granted') {
+            new Notification('تذكير إيماني من توبه', { body, icon: 'https://cdn-icons-png.flaticon.com/512/4273/4273032.png' });
+        }
+        worshipLog.notificationsSent += 1;
+        saveWorshipLog();
+        renderWorshipLog();
+    }
+
+    async function askFeaturesAI() {
+        const input = document.getElementById('features-ai-input');
+        const result = document.getElementById('features-ai-result');
+        const question = input.value.trim();
+        if(!question) return;
+
+        if(question.includes('كم مرة') || question.includes('عدد')) {
+            const entry = Object.entries(worshipLog.dhikrCounts || {}).find(([text]) => question.includes(text.slice(0, 10)) || text.includes(question.replace('كم مرة', '').trim()));
+            if(entry) result.innerText = `قلت هذا الذكر ${toArabicNum(entry[1])} مرة حتى الآن.`;
+            else result.innerText = `لم أجد هذا الذكر في السجل بعد. إجمالي الأذكار المسجلة: ${toArabicNum(worshipLog.totalDhikr || 0)}.`;
+            return;
+        }
+
+        if(question.includes('اخر') || question.includes('آخر')) {
+            result.innerText = worshipLog.lastReadSurah ? `آخر ما قرأت هو سورة ${worshipLog.lastReadSurah}.` : 'لا يوجد سجل قراءة حتى الآن.';
+            return;
+        }
+
+        result.innerText = 'جاري التحليل...';
+        try {
+            const context = `آخر سورة: ${worshipLog.lastReadSurah || 'لا يوجد'} | مرات فتح السور: ${worshipLog.surahOpens || 0} | إجمالي الأذكار: ${worshipLog.totalDhikr || 0}`;
+            featureAiHistory.push({ role: 'user', content: `${question}
+سجل المستخدم: ${context}` });
+            const resp = await puter.ai.chat(featureAiHistory, { model: 'deepseek-chat' });
+            const answer = resp?.message?.content || 'تعذر توليد الرد حالياً.';
+            featureAiHistory.push({ role: 'assistant', content: answer });
+            result.innerText = answer;
+        } catch(e) {
+            result.innerText = 'تعذر الاتصال حالياً بخدمة الذكاء.';
+        }
+    }
+
+    async function generateGeneralInfo() {
+        const result = document.getElementById('features-ai-result');
+        result.innerText = 'جاري توليد معلومات عامة...';
+        try {
+            const prompt = 'اعطني 5 معلومات عامة إسلامية قصيرة مع نصيحة عملية في النهاية، باللغة العربية فقط.';
+            const resp = await puter.ai.chat([{ role: 'user', content: prompt }], { model: 'deepseek-chat' });
+            result.innerText = resp?.message?.content || 'تعذر التوليد حالياً.';
+        } catch(e) {
+            result.innerText = 'فشل توليد المعلومات العامة حالياً.';
+        }
+    }
 
     let aiHistory =[{ role: 'system', content: 'أنت مفسر ومساعد إسلامي. أجب باختصار وأدب، بدون تنسيقات معقدة.' }];
     function openAI() { document.getElementById('ai-modal').classList.add('active'); setTimeout(()=>document.getElementById('ai-input').focus(), 300); }
