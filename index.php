@@ -225,6 +225,7 @@
         <button onclick="switchTab('reciters')" id="nav-reciters">القراء</button>
         <button onclick="switchTab('adhkar')" id="nav-adhkar">الأذكار</button>
         <button onclick="switchTab('radio')" id="nav-radio">الإذاعة</button>
+        <button onclick="switchTab('features')" id="nav-features">المميزات</button>
         <button onclick="switchTab('ai')" id="nav-ai">AI</button>
     </div>
 </nav>
@@ -295,10 +296,15 @@
             <div id="adhkar-items"></div>
         </div>
 
+        
+
+    
+
+    <div id="features" class="section">
         <div class="feature-block">
             <div class="feature-title">المميزات الإضافية</div>
-            <div class="feature-muted" id="khatma-progress-text">تقدم الختمة: 0%</div>
-            <div style="height:6px; background:var(--accent-light); border-radius:4px; margin-top:8px;"><div id="khatma-progress-bar" style="height:100%; width:0%; background:var(--accent); border-radius:4px;"></div></div>
+            <div class="feature-muted" id="khatma-progress-text">تقدم الختمة: ٢% | الخطة: ١٥ يوم</div>
+            <div style="height:6px; background:var(--accent-light); border-radius:4px; margin-top:8px;"><div id="khatma-progress-bar" style="height:100%; width:2%; background:var(--accent); border-radius:4px;"></div></div>
             <div class="feature-row">
                 <button class="feature-btn" onclick="setKhatmaPlan(30)">خطة ختمة 30 يوم</button>
                 <button class="feature-btn" onclick="setKhatmaPlan(15)">خطة ختمة 15 يوم</button>
@@ -312,7 +318,7 @@
             <div class="feature-row">
                 <input id="prayer-city" class="feature-input" placeholder="المدينة (مثال: Cairo)">
                 <button class="feature-btn" onclick="loadPrayerTimes()">مواقيت الصلاة + إشعار</button>
-                <span class="feature-muted" id="prayer-next"></span>
+                <span class="feature-muted" id="prayer-next">القادم: Dhuhr (12:06)</span>
             </div>
             <div class="feature-row">
                 <button class="feature-btn" onclick="enableOfflineMode()">تفعيل أوفلاين لسور قصيرة</button>
@@ -326,8 +332,29 @@
                 <button class="feature-btn" onclick="openProphetsStories()">قصص الأنبياء</button>
                 <button class="feature-btn" onclick="openSeerahTimeline()">السيرة (خط زمني)</button>
             </div>
+            <div class="feature-row">
+                <button class="feature-btn" onclick="generateSmartDailyPlan()"><i class="fas fa-robot"></i> خطة يومية بالذكاء الاصطناعي</button>
+                <button class="feature-btn" onclick="reviewProgressWithAI()"><i class="fas fa-chart-line"></i> تحليل تقدّمك بالذكاء الاصطناعي</button>
+                <button class="feature-btn" onclick="openFeatureAIAssistant('اقترح لي برنامج حفظ قوي لمدة 15 يوم')"><i class="fas fa-brain"></i> مدرب AI للحفظ</button>
+            </div>
             <div class="feature-muted" id="feature-status">جاهز.</div>
             <div class="feature-muted" id="points-status">النقاط: 0 | الإنجازات: 0</div>
+        </div>
+
+        <div class="feature-block">
+            <div class="feature-title">أخبار وتحديثات التطبيق</div>
+            <div id="updates-list" class="feature-muted"></div>
+        </div>
+
+        <div class="feature-block">
+            <div class="feature-title">أقسام المميزات</div>
+            <div class="feature-row">
+                <button class="feature-btn" onclick="switchFeatureCategory('wird')">قسم الورد والختمة</button>
+                <button class="feature-btn" onclick="switchFeatureCategory('audio')">قسم الصوت والإذاعة</button>
+                <button class="feature-btn" onclick="switchFeatureCategory('learning')">قسم التعلم والتجويد</button>
+                <button class="feature-btn" onclick="switchFeatureCategory('assistant')">قسم المساعد الذكي</button>
+            </div>
+            <div class="feature-muted" id="feature-category-view">اختر قسمًا لعرض أدواته المتقدمة.</div>
         </div>
     </div>
 
@@ -540,29 +567,13 @@
     let activeMushafReciter = 'ar.alafasy';
     let activeListenReciter = null;
 
-    const radioStations =[
-        { id: 'cairo', name: "إذاعة القرآن الكريم - القاهرة", url: "https://stream.radiojar.com/8s5u5tpdtwzuv" },
-        { id: 'saudi', name: "إذاعة القرآن الكريم - السعودية", url: "https://n0a.radiojar.com/4wqre23fytzuv" },
-        { id: 'makkah', name: "إذاعة القرآن الكريم - مكة", url: "https://qurango.net/radio/makkah" },
-        { id: 'madinah', name: "إذاعة القرآن الكريم - المدينة", url: "https://qurango.net/radio/madinah" },
-        { id: 'alafasy', name: "مشاري العفاسي", url: "https://qurango.net/radio/mishary_alafasi" },
-        { id: 'abdulbasit', name: "عبدالباسط عبدالصمد", url: "https://qurango.net/radio/abdulbasit_abdulsamad_mojawwad" },
-        { id: 'husary', name: "محمود خليل الحصري", url: "https://qurango.net/radio/mahmoud_khalil_alhussary" },
-        { id: 'maher', name: "ماهر المعيقلي", url: "https://qurango.net/radio/maher_al_muaiqly" },
-        { id: 'minshawi', name: "محمد صديق المنشاوي", url: "https://qurango.net/radio/mohammed_siddiq_alminshawi" },
-        { id: 'yasser', name: "ياسر الدوسري", url: "https://qurango.net/radio/yasser_aldosari" },
-        { id: 'sudais', name: "عبدالرحمن السديس", url: "https://qurango.net/radio/abdulrahman_alsudais" },
-        { id: 'shuraym', name: "سعود الشريم", url: "https://qurango.net/radio/saud_alshuraim" },
-        { id: 'hudhaify', name: "علي الحذيفي", url: "https://qurango.net/radio/ali_alhuthaify" },
-        { id: 'ajamy', name: "أحمد العجمي", url: "https://qurango.net/radio/ahmed_alajmy" },
-        { id: 'ghamdi', name: "سعد الغامدي", url: "https://qurango.net/radio/saad_alghamdi" },
-        { id: 'juhani', name: "عبدالله الجهني", url: "https://qurango.net/radio/abdullah_aljuhani" },
-        { id: 'tablawi', name: "محمد محمود الطبلاوي", url: "https://qurango.net/radio/mohamed_mahmoud_altablawi" },
-        { id: 'jibreel', name: "محمد جبريل", url: "https://qurango.net/radio/mohammad_jibreel" },
-        { id: 'tarawih', name: "إذاعة صلاة التراويح", url: "https://qurango.net/radio/tarawih" },
-        { id: 'fatwa', name: "إذاعة الفتاوى", url: "https://qurango.net/radio/fatwa" }
+    let radioStations =[
+        { id: 'egypt-quran', name: "إذاعة القرآن الكريم - القاهرة", url: "https://n0e.radiojar.com/8s5u5tpdtwzuv" },
+        { id: 'saudi-quran', name: "إذاعة القرآن الكريم - السعودية", url: "https://n0a.radiojar.com/4wqre23fytzuv" },
+        { id: 'quran-radio', name: "Quran Radio", url: "https://stream.quranradio.net:8443/;" },
+        { id: 'sunnah-radio', name: "إذاعة السنة", url: "https://stream.radiojar.com/4ejfz7f5q3quv" }
     ];
-    let currentRadioId = 'cairo';
+    let currentRadioId = 'egypt-quran';
 
     let sleepTimerInterval = null;
     let sleepMinutesLeft = 0;
@@ -578,7 +589,7 @@
 
     window.onload = () => {
         setTimeout(() => { document.getElementById('loader').style.opacity = '0'; setTimeout(() => document.getElementById('loader').style.display = 'none', 800); }, 1000);
-        loadBookmark(); loadSurahs(); loadAdhkar(); renderRadioStations(); populateMushafReciters(); renderRecitersGrid(); loadDynamicReciters(); initAdvancedFeatures();
+        loadBookmark(); loadSurahs(); loadAdhkar(); renderRadioStations(); populateMushafReciters(); renderRecitersGrid(); loadDynamicReciters(); loadReliableRadios(); initAdvancedFeatures();
         document.getElementById('radio-audio').src = radioStations[0].url;
     };
 
@@ -631,7 +642,7 @@
         updateKhatmaProgress();
         updatePointsUI();
         requestNotificationPermission();
-        autoReplaceBrokenStations();
+        loadUpdatesPanel();
     }
 
     function requestNotificationPermission() {
@@ -753,6 +764,62 @@
     function openTajweedLessons() { openAI(); appendAiMsg('اعطني درس تجويد مبسط اليوم مع مثال صوتي مقترح.', 'user'); }
     function openProphetsStories() { openAI(); appendAiMsg('احكِ لي قصة نبي مختصرة للأطفال مع الفائدة.', 'user'); }
     function openSeerahTimeline() { openAI(); appendAiMsg('اعطني خطًا زمنيًا مختصرًا للسيرة النبوية.', 'user'); }
+
+    function loadUpdatesPanel() {
+        const updates = [
+            'تحديث جديد: صفحة المميزات أصبحت مستقلة بالكامل مع أقسام متقدمة.',
+            'تم تحسين دعم الإشعارات لتجربة أفضل بعد تثبيت التطبيق على الهاتف.',
+            'تم اعتماد محطات إذاعية موثوقة مع إمكانية تحميل محطات مباشرة من mp3quran.',
+            'تم توسيع تكامل الذكاء الاصطناعي لإنتاج خطة يومية وتحليل التقدم.'
+        ];
+        const list = document.getElementById('updates-list');
+        if(list) list.innerHTML = updates.map(u => `• ${u}`).join('<br>');
+    }
+
+    function switchFeatureCategory(cat) {
+        const map = {
+            wird: 'أدوات هذا القسم: خطة الختمة، تذكير الورد، عدّاد الإنجاز، وتحليل AI للالتزام اليومي.',
+            audio: 'أدوات هذا القسم: إذاعات موثوقة، مفضلة وتقييم، تنزيل مباشر، وسرعات متعددة.',
+            learning: 'أدوات هذا القسم: تعلم التجويد، قصص الأنبياء، خط زمني للسيرة، ومكتبة خطب.',
+            assistant: 'أدوات هذا القسم: مدرب حفظ بالذكاء الاصطناعي، خطة يومية، تحليل شامل ومتابعة.'
+        };
+        document.getElementById('feature-category-view').innerText = map[cat] || 'اختر قسمًا لعرض أدواته المتقدمة.';
+    }
+
+    function openFeatureAIAssistant(promptText) {
+        openAI();
+        const inp = document.getElementById('ai-input');
+        inp.value = promptText;
+        sendAiMsg(new Event('submit'));
+    }
+
+    function generateSmartDailyPlan() {
+        const progress = Math.round((khatmaDoneSurahs.length / 114) * 100);
+        openFeatureAIAssistant(`اصنع لي خطة يومية دقيقة لقراءة القرآن بناء على تقدم ${progress}% وخطة ${khatmaPlanDays} يوم، مع جدول صباح/مساء.`);
+    }
+
+    function reviewProgressWithAI() {
+        openFeatureAIAssistant(`حلل أدائي الحالي: نقاط ${points}، إنجازات ${achievements.length}، سور منجزة ${khatmaDoneSurahs.length}، واعطني خطة تحسين عملية للأسبوع القادم.`);
+    }
+
+    async function loadReliableRadios() {
+        try {
+            const res = await fetch('https://mp3quran.net/api/v3/radios?language=ar');
+            const data = await res.json();
+            const dynamic = (data.radios || [])
+                .filter(r => r.url)
+                .slice(0, 20)
+                .map((r, i) => ({ id: `mp3q-${i}`, name: r.name || `إذاعة ${i+1}`, url: r.url }));
+            if(dynamic.length) {
+                radioStations = dynamic;
+                currentRadioId = dynamic[0].id;
+                radioAudio.src = dynamic[0].url;
+                renderRadioStations();
+            }
+        } catch(e) {
+            // fallback to static verified radios
+        }
+    }
 
     function changeFontSize(change) {
         currentFontSize += change;
@@ -1155,15 +1222,6 @@
         stationRatings[id] = Math.max(1, Math.min(5, v));
         localStorage.setItem('toba_station_ratings', JSON.stringify(stationRatings));
         renderRadioStations();
-    }
-
-    function autoReplaceBrokenStations() {
-        radioStations.forEach((st, idx) => {
-            fetch(st.url, { method: 'HEAD', mode: 'no-cors' }).catch(() => {
-                const fallback = radioStations.find(x => x.id !== st.id);
-                if(fallback) radioStations[idx] = { ...st, url: fallback.url };
-            });
-        });
     }
 
     function playRandomStation() {
