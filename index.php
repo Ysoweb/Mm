@@ -263,6 +263,7 @@
             </div>
             <div class="search-area">
                 <input type="text" id="reciter-search" placeholder="ابحث عن قارئ..." oninput="filterReciters()">
+                <p id="reciters-count" style="color: var(--text-muted); font-size: 1rem;">جاري تجهيز قائمة القراء...</p>
             </div>
             <div id="reciters-grid" class="reciters-grid"></div>
         </div>
@@ -296,6 +297,7 @@
             </div>
             <h2 class="radio-title" id="current-station-title">إذاعة القرآن الكريم - القاهرة</h2>
             <p class="radio-subtitle" id="radio-status-text">متوقف</p>
+            <button onclick="playRandomStation()" style="background: transparent; color: var(--accent); border: 1px solid var(--accent-light); border-radius: 999px; padding: 7px 16px; cursor: pointer; font-family: 'Tajawal';"><i class="fas fa-shuffle"></i> محطة عشوائية</button>
         </div>
         <div class="station-list-flat" id="radio-stations-container"></div>
     </div>
@@ -363,7 +365,7 @@
                     <i class="fas fa-moon"></i>
                     <div id="timer-badge" style="position:absolute; top:-8px; right:-8px; background:var(--accent); color:var(--text-main); font-size:0.7rem; border-radius:50%; width:16px; height:16px; display:none; align-items:center; justify-content:center; font-weight:bold;"></div>
                 </button>
-                <button onclick="downloadCurrentAudio(event)" style="background:transparent; color:var(--bg); font-size:1.2rem; cursor:pointer;"><i class="fas fa-download"></i></button>
+                <button onclick="downloadCurrentAudio(event, this)" style="background:transparent; color:var(--bg); font-size:1.2rem; cursor:pointer;"><i class="fas fa-download"></i></button>
                 <button onclick="closePlayer(event)" style="background:transparent; color:var(--bg); font-size:1.2rem; cursor:pointer;"><i class="fas fa-times"></i></button>
             </div>
         </div>
@@ -459,7 +461,7 @@
     let userBookmark = null;
     let currentFontSize = 1.8;
 
-    const topReciters =[
+    let topReciters = [
         {id: 'ar.alafasy', name: 'مشاري العفاسي', icon: 'fas fa-user'},
         {id: 'ar.abdulbasitmurattal', name: 'عبد الباسط عبد الصمد', icon: 'fas fa-user'},
         {id: 'ar.husary', name: 'محمود خليل الحصري', icon: 'fas fa-user'},
@@ -473,18 +475,31 @@
         {id: 'ar.aymanswaid', name: 'أيمن سويد', icon: 'fas fa-user'},
         {id: 'ar.abdullahbasfar', name: 'عبد الله بصفر', icon: 'fas fa-user'}
     ];
+    const MIN_RECITERS_TARGET = 100;
+    const favoriteReciterKey = 'toba_favorite_reciter';
+    let favoriteReciterId = localStorage.getItem(favoriteReciterKey) || '';
     let activeMushafReciter = 'ar.alafasy';
     let activeListenReciter = null;
 
     const radioStations =[
         { id: 'cairo', name: "إذاعة القرآن الكريم - القاهرة", url: "https://stream.radiojar.com/8s5u5tpdtwzuv" },
         { id: 'saudi', name: "إذاعة القرآن الكريم - السعودية", url: "https://n0a.radiojar.com/4wqre23fytzuv" },
+        { id: 'makkah', name: "إذاعة القرآن الكريم - مكة", url: "https://qurango.net/radio/makkah" },
+        { id: 'madinah', name: "إذاعة القرآن الكريم - المدينة", url: "https://qurango.net/radio/madinah" },
         { id: 'alafasy', name: "مشاري العفاسي", url: "https://qurango.net/radio/mishary_alafasi" },
         { id: 'abdulbasit', name: "عبدالباسط عبدالصمد", url: "https://qurango.net/radio/abdulbasit_abdulsamad_mojawwad" },
         { id: 'husary', name: "محمود خليل الحصري", url: "https://qurango.net/radio/mahmoud_khalil_alhussary" },
         { id: 'maher', name: "ماهر المعيقلي", url: "https://qurango.net/radio/maher_al_muaiqly" },
         { id: 'minshawi', name: "محمد صديق المنشاوي", url: "https://qurango.net/radio/mohammed_siddiq_alminshawi" },
         { id: 'yasser', name: "ياسر الدوسري", url: "https://qurango.net/radio/yasser_aldosari" },
+        { id: 'sudais', name: "عبدالرحمن السديس", url: "https://qurango.net/radio/abdulrahman_alsudais" },
+        { id: 'shuraym', name: "سعود الشريم", url: "https://qurango.net/radio/saud_alshuraim" },
+        { id: 'hudhaify', name: "علي الحذيفي", url: "https://qurango.net/radio/ali_alhuthaify" },
+        { id: 'ajamy', name: "أحمد العجمي", url: "https://qurango.net/radio/ahmed_alajmy" },
+        { id: 'ghamdi', name: "سعد الغامدي", url: "https://qurango.net/radio/saad_alghamdi" },
+        { id: 'juhani', name: "عبدالله الجهني", url: "https://qurango.net/radio/abdullah_aljuhani" },
+        { id: 'tablawi', name: "محمد محمود الطبلاوي", url: "https://qurango.net/radio/mohamed_mahmoud_altablawi" },
+        { id: 'jibreel', name: "محمد جبريل", url: "https://qurango.net/radio/mohammad_jibreel" },
         { id: 'tarawih', name: "إذاعة صلاة التراويح", url: "https://qurango.net/radio/tarawih" },
         { id: 'fatwa', name: "إذاعة الفتاوى", url: "https://qurango.net/radio/fatwa" }
     ];
@@ -496,11 +511,43 @@
 
     window.onload = () => {
         setTimeout(() => { document.getElementById('loader').style.opacity = '0'; setTimeout(() => document.getElementById('loader').style.display = 'none', 800); }, 1000);
-        loadBookmark(); loadSurahs(); loadAdhkar(); renderRadioStations(); populateMushafReciters(); renderRecitersGrid();
+        loadBookmark(); loadSurahs(); loadAdhkar(); renderRadioStations(); populateMushafReciters(); renderRecitersGrid(); loadDynamicReciters();
         document.getElementById('radio-audio').src = radioStations[0].url;
     };
 
     function toArabicNum(num) { return String(num).split('').map(c => arabicNumbers[c] || c).join(''); }
+
+    function updateRecitersCount(filteredCount = topReciters.length) {
+        const label = document.getElementById('reciters-count');
+        if(!label) return;
+        const total = topReciters.length;
+        label.innerText = `عدد القراء: ${toArabicNum(filteredCount)} من ${toArabicNum(total)}`;
+    }
+
+    async function loadDynamicReciters() {
+        try {
+            const res = await fetch('https://api.alquran.cloud/v1/edition?format=audio');
+            const data = await res.json();
+            const existingIds = new Set(topReciters.map(r => r.id));
+            const fetched = (data.data || [])
+                .filter(item => item && item.identifier && item.format === 'audio')
+                .map(item => ({ id: item.identifier, name: item.name || item.englishName, icon: 'fas fa-user' }))
+                .filter(item => item.name && !existingIds.has(item.id));
+
+            topReciters = [...topReciters, ...fetched].slice(0, Math.max(MIN_RECITERS_TARGET, topReciters.length + fetched.length));
+            updateRecitersCount();
+            renderRecitersGrid(document.getElementById('reciter-search').value.trim());
+        } catch(e) {
+            updateRecitersCount();
+        }
+    }
+
+    function toggleFavoriteReciter(e, reciterId) {
+        e.stopPropagation();
+        favoriteReciterId = favoriteReciterId === reciterId ? '' : reciterId;
+        localStorage.setItem(favoriteReciterKey, favoriteReciterId);
+        renderRecitersGrid(document.getElementById('reciter-search').value.trim());
+    }
 
     function switchTab(tab) {
         if(tab === 'ai') { openAI(); return; }
@@ -579,7 +626,7 @@
     function populateMushafReciters() {
         const sel = document.getElementById('mushaf-reciter');
         sel.innerHTML = '';
-        topReciters.forEach(r => {
+        topReciters.slice(0, 30).forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.id; opt.innerText = r.name;
             sel.appendChild(opt);
@@ -645,12 +692,21 @@
     function renderRecitersGrid(filter = '') {
         const cont = document.getElementById('reciters-grid');
         cont.innerHTML = '';
-        const list = topReciters.filter(r => r.name.includes(filter));
+        const normalized = filter.trim();
+        const favorites = topReciters.filter(r => r.id === favoriteReciterId && r.name.includes(normalized));
+        const rest = topReciters.filter(r => r.id !== favoriteReciterId && r.name.includes(normalized));
+        const list = [...favorites, ...rest];
+        updateRecitersCount(list.length);
+        if(!list.length) {
+            cont.innerHTML = '<div style="text-align:center; width:100%; color:var(--text-muted);">لا يوجد قارئ مطابق للبحث.</div>';
+            return;
+        }
         list.forEach(r => {
+            const isFav = r.id === favoriteReciterId;
             const d = document.createElement('div');
             d.className = 'reciter-card';
             d.onclick = () => openReciterView(r);
-            d.innerHTML = `<div class="reciter-avatar"><i class="${r.icon}"></i></div><div class="reciter-name">${r.name}</div>`;
+            d.innerHTML = `<button onclick="toggleFavoriteReciter(event, '${r.id}')" style="background:transparent; color:${isFav ? 'var(--accent)' : 'var(--text-muted)'}; font-size:1rem; position:absolute; top:8px; left:8px; cursor:pointer;"><i class="fas fa-star"></i></button><div class="reciter-avatar"><i class="${r.icon}"></i></div><div class="reciter-name">${r.name}</div>`;
             cont.appendChild(d);
         });
     }
@@ -795,7 +851,46 @@
 
     function closePlayer(e) { e.stopPropagation(); audio.pause(); player.classList.remove('visible', 'expanded'); playState.mode = 'none'; document.querySelectorAll('.ayah-span').forEach(el => el.classList.remove('playing')); }
 
-    function downloadCurrentAudio(e) { e.stopPropagation(); if (!audio.src) return; const a = document.createElement('a'); a.href = audio.src; a.download = 'تلاوة.mp3'; a.target = '_blank'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+    function buildAudioFileName() {
+        if(playState.mode === 'surah') {
+            const surahNum = playState.surahId > 0 ? String(playState.surahId).padStart(3, '0') : '000';
+            return `surah-${surahNum}.mp3`;
+        }
+        if(playState.mode === 'ayah' && playState.currentIndex !== -1 && playState.ayahs[playState.currentIndex]) {
+            const ayahNo = playState.ayahs[playState.currentIndex].numberInSurah || (playState.currentIndex + 1);
+            return `ayah-${playState.surahId}-${ayahNo}.mp3`;
+        }
+        return 'tilawa.mp3';
+    }
+
+    async function downloadCurrentAudio(e, btn) {
+        e.stopPropagation();
+        if (!audio.src) return;
+        const oldIcon = btn ? btn.innerHTML : '';
+        if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+        try {
+            const resp = await fetch(audio.src);
+            if(!resp.ok) throw new Error('failed to fetch');
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = buildAudioFileName();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch(err) {
+            const a = document.createElement('a');
+            a.href = audio.src;
+            a.download = buildAudioFileName();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } finally {
+            if(btn) { btn.innerHTML = oldIcon; btn.disabled = false; }
+        }
+    }
 
     function changeVolume(e) { audio.volume = e.target.value; updateVolIcon(); }
     function toggleMute(e) { e.stopPropagation(); if(audio.volume > 0) { audio.dataset.lastVol = audio.volume; audio.volume = 0; volSlider.value = 0; } else { audio.volume = audio.dataset.lastVol || 1; volSlider.value = audio.volume; } updateVolIcon(); }
@@ -828,6 +923,13 @@
     function renderRadioStations() { const cont = document.getElementById('radio-stations-container'); cont.innerHTML = ''; radioStations.forEach(st => { const d = document.createElement('div'); d.className = `station-item-flat ${st.id === currentRadioId ? 'active' : ''}`; d.onclick = () => changeRadioStation(st); d.innerHTML = `<div class="station-name">${st.name}</div>`; cont.appendChild(d); }); }
 
     function changeRadioStation(station) { currentRadioId = station.id; document.getElementById('current-station-title').innerText = station.name; renderRadioStations(); const wasPlaying = !radioAudio.paused; radioAudio.src = station.url; if(wasPlaying) { radioAudio.play(); radioStatusText.innerText = "جاري البث..."; } }
+
+    function playRandomStation() {
+        const available = radioStations.filter(st => st.id !== currentRadioId);
+        const randomStation = available[Math.floor(Math.random() * available.length)] || radioStations[0];
+        changeRadioStation(randomStation);
+        if(radioAudio.paused) toggleRadio();
+    }
 
     function initAudioContext() { if(!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); analyser = audioCtx.createAnalyser(); source = audioCtx.createMediaElementSource(radioAudio); source.connect(analyser); analyser.connect(audioCtx.destination); analyser.fftSize = 128; dataArray = new Uint8Array(analyser.frequencyBinCount); radioCanvas.width = radioCanvas.parentElement.clientWidth; radioCanvas.height = radioCanvas.parentElement.clientHeight; } if(audioCtx.state === 'suspended') audioCtx.resume(); }
 
