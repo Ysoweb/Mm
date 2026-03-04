@@ -206,6 +206,11 @@
         .feature-btn { background: transparent; color: var(--accent); border: 1px solid var(--accent-light); border-radius: 999px; padding: 8px 14px; cursor: pointer; font-family: 'Tajawal'; }
         .feature-muted { color: var(--text-muted); font-size: 0.95rem; }
 
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 12px; }
+        .feature-card { border: 1px solid var(--accent-light); border-radius: 14px; padding: 12px; background: rgba(184,153,71,0.06); }
+        .feature-card h4 { font-family: 'Amiri', serif; color: var(--accent); font-size: 1.2rem; margin-bottom: 6px; }
+        .feature-card p { color: var(--text-muted); font-size: .95rem; line-height: 1.6; }
+
         @media (max-width: 768px) {
             .logo-text { font-size: 3.5rem; } .mushaf-title { font-size: 3rem; }
             .nav-links button { font-size: 1rem; padding: 5px; } .sheet-actions { grid-template-columns: repeat(3, 1fr); gap: 15px; }
@@ -295,10 +300,7 @@
             <button onclick="closeAdhkar()" style="background:transparent; font-size:2rem; cursor:pointer; margin-bottom:40px; text-align:center; display:block; width:100%; color:var(--text-muted);"><i class="fas fa-chevron-up"></i></button>
             <div id="adhkar-items"></div>
         </div>
-
-        
-
-    
+    </div>
 
     <div id="features" class="section">
         <div class="feature-block">
@@ -344,6 +346,12 @@
         <div class="feature-block">
             <div class="feature-title">أخبار وتحديثات التطبيق</div>
             <div id="updates-list" class="feature-muted"></div>
+        </div>
+
+
+        <div class="feature-block">
+            <div class="feature-title">لوحة تنفيذ المميزات (واقعية)</div>
+            <div class="feature-grid" id="features-dashboard-grid"></div>
         </div>
 
         <div class="feature-block">
@@ -643,6 +651,7 @@
         updatePointsUI();
         requestNotificationPermission();
         loadUpdatesPanel();
+        renderFeaturesDashboard();
     }
 
     function requestNotificationPermission() {
@@ -767,13 +776,28 @@
 
     function loadUpdatesPanel() {
         const updates = [
-            'تحديث جديد: صفحة المميزات أصبحت مستقلة بالكامل مع أقسام متقدمة.',
-            'تم تحسين دعم الإشعارات لتجربة أفضل بعد تثبيت التطبيق على الهاتف.',
-            'تم اعتماد محطات إذاعية موثوقة مع إمكانية تحميل محطات مباشرة من mp3quran.',
-            'تم توسيع تكامل الذكاء الاصطناعي لإنتاج خطة يومية وتحليل التقدم.'
+            'تحديث حقيقي: صفحة المميزات أصبحت مستقلة بالكامل وليست داخل الأذكار.',
+            'تم إصلاح ظهور محتوى الإذاعة والمميزات بعد معالجة بنية الأقسام.',
+            'تم اعتماد بث موثوق مع تحميل ديناميكي من mp3quran عند التوفر.',
+            'تم تعزيز AI بخطط يومية تلقائية وتحليل تقدّم مفصل.',
+            'تمت إضافة لوحة تنفيذ تعرض حالة كل ميزة بشكل مباشر.'
         ];
         const list = document.getElementById('updates-list');
         if(list) list.innerHTML = updates.map(u => `• ${u}`).join('<br>');
+    }
+
+    function renderFeaturesDashboard() {
+        const grid = document.getElementById('features-dashboard-grid');
+        if(!grid) return;
+        const cards = [
+            {t:'الختمة والورد', d:`نسبة الإنجاز الحالية: ${Math.round((khatmaDoneSurahs.length/114)*100)}% مع خطة ${khatmaPlanDays} يوم.`},
+            {t:'الإشعارات', d:'تذكير يومي للورد + أذكار الصباح/المساء + تنبيه صيام الإثنين/الخميس.'},
+            {t:'الصوت والبث', d:`عدد المحطات المتاحة الآن: ${radioStations.length} مع ترتيب مفضلة وتقييم.`},
+            {t:'الذكاء الاصطناعي', d:'خطة حفظ يومية، تحليل أداء، ومساعد تعلم تفاعلي بخطوات عملية.'},
+            {t:'المزامنة', d:'حفظ/استعادة بيانات المستخدم محليًا كمزامنة خفيفة تعمل فورًا.'},
+            {t:'المحتوى التعليمي', d:'مكتبة خطب + تعلم التجويد + قصص الأنبياء + خط زمني للسيرة.'}
+        ];
+        grid.innerHTML = cards.map(c => `<div class="feature-card"><h4>${c.t}</h4><p>${c.d}</p></div>`).join('');
     }
 
     function switchFeatureCategory(cat) {
@@ -815,6 +839,7 @@
                 currentRadioId = dynamic[0].id;
                 radioAudio.src = dynamic[0].url;
                 renderRadioStations();
+                renderFeaturesDashboard();
             }
         } catch(e) {
             // fallback to static verified radios
